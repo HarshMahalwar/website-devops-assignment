@@ -1,17 +1,25 @@
 pipeline {
     agent any
 
+     environment{
+       registryCredential = 'ecr:ap-northeast-1:Capstone_harsh'
+       appRegistry = "427091699681.dkr.ecr.ap-northeast-1.amazonaws.com/capstoneproject"
+       capstoneRegistry = "https://427091699681.dkr.ecr.ap-northeast-1.amazonaws.com"
+       cluster = "capstonecluster"
+        service = "capstoneservice"
+   }
+
     stages {
         stage('Clone Website') {
             steps {
-                git url:'https://github.com/Aryanhac/Capstone-Project'
+                git url:'https://github.com/HarshMahalwar/website-devops-assignment'
             }
         }
 
        stage("Docker Build Image"){
            steps{
              script{
-                dockerImage = docker.build("$BUILD_NUMBER",".")
+                dockerImage = docker.build(appRegistry+ ":$BUILD_NUMBER",".")
              }
            }
       }
@@ -20,29 +28,30 @@ pipeline {
             steps {
                 // Run tests on the website
                 sh 'echo "Running tests on the website"'
-                script {
-                    branchName = sh(label: 'getBranchName', returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
-                   println branchName
-                }   
-               
             }
        }
 
-        stage('Push to Production') {
-    
-               when {
-                 expression {
-                    return env.BRANCH_NAME != 'master';
+       stage("Upload App Image"){
+         steps{
+            script{
+                docker.withRegistry(capstoneRegistry, registryCredential){
+                    dockerImage.push("$BUILD_NUMBER")
+                    dockerImage.push('latest')
                 }
-             }
-            
-            steps {
-                // Deploy the website to production
-                sh 'echo "Deploying the website to production"'
             }
-        }
+         }
+      }
+
+      stage('Deploy to ecs'){
+         when {
+                branch "master"
+         }
+         steps{
+            withAWS(credentials: 'Capstone_harsh', region: 'us-east-1'){
+                sh 'aws ecs update-service --cluster ${cluster} --service ${service} --force-new-deployment'
+            }
+         }
+      }
 
     }
 }
-
-
