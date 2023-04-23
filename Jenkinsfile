@@ -5,7 +5,7 @@ pipeline {
        registryCredential = 'ecr:ap-northeast-1:Capstone_harsh'
        appRegistry = "427091699681.dkr.ecr.ap-northeast-1.amazonaws.com/capstoneproject"
        capstoneRegistry = "https://427091699681.dkr.ecr.ap-northeast-1.amazonaws.com"
-       cluster = "capstonecluster1"
+       cluster = "clusterCap"
         service = "capstoneservice1"
    }
 
